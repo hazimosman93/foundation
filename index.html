@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MyGrant Checker – Malaysia Grant Proposal Analyser</title>
+  <style>
+    :root {
+      --primary: #003087;
+      --accent:  #CC0001;
+      --gold:    #F6C000;
+      --green:   #00843D;
+      --bg:      #F4F6FA;
+      --card:    #FFFFFF;
+      --border:  #DDE3F0;
+      --text:    #1A1A2E;
+      --muted:   #6B7280;
+      --shadow:  0 2px 12px rgba(0,0,0,.08);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, var(--primary) 0%, #001a5c 100%);
+      color: #fff; padding: 0;
+    }
+    .header-inner {
+      max-width: 1100px; margin: auto;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 24px;
+    }
+    .logo { display: flex; align-items: center; gap: 14px; }
+    .logo-icon {
+      width: 48px; height: 48px; border-radius: 10px;
+      background: var(--gold); display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+    }
+    .logo h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -.5px; }
+    .logo p  { font-size: .78rem; opacity: .8; margin-top: 2px; }
+    .badge {
+      background: var(--gold); color: var(--primary);
+      font-size: .7rem; font-weight: 700; padding: 4px 10px; border-radius: 20px;
+      text-transform: uppercase; letter-spacing: .5px;
+    }
+
+    /* ── Hero strip ── */
+    .hero {
+      background: linear-gradient(90deg, #001a5c, #003087);
+      color: #fff; text-align: center; padding: 36px 24px 32px;
+      border-bottom: 4px solid var(--gold);
+    }
+    .hero h2 { font-size: 2rem; font-weight: 800; }
+    .hero p  { font-size: 1rem; opacity: .85; margin-top: 8px; max-width: 680px; margin-inline: auto; }
+    .grant-tags { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 18px; }
+    .grant-tag {
+      background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25);
+      padding: 4px 12px; border-radius: 20px; font-size: .75rem; color: #fff;
+    }
+
+    /* ── Layout ── */
+    main { max-width: 1100px; margin: auto; padding: 32px 24px 60px; }
+    .grid { display: grid; grid-template-columns: 1fr 380px; gap: 28px; }
+    @media(max-width:860px){ .grid { grid-template-columns: 1fr; } }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; box-shadow: var(--shadow); overflow: hidden;
+    }
+    .card-header {
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .card-header h3 { font-size: 1rem; font-weight: 700; }
+    .card-header .icon { font-size: 1.25rem; }
+    .card-body { padding: 20px; }
+
+    /* ── Grant type selector ── */
+    .grant-selector { margin-bottom: 24px; }
+    .grant-selector label { font-size: .85rem; font-weight: 600; color: var(--muted); display: block; margin-bottom: 8px; }
+    .grant-options { display: flex; flex-wrap: wrap; gap: 8px; }
+    .grant-btn {
+      padding: 7px 14px; border-radius: 8px; border: 2px solid var(--border);
+      background: #fff; cursor: pointer; font-size: .82rem; font-weight: 600;
+      color: var(--text); transition: all .2s;
+    }
+    .grant-btn:hover  { border-color: var(--primary); color: var(--primary); }
+    .grant-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+    /* ── Section tabs ── */
+    .section-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
+    .sec-tab {
+      padding: 6px 13px; border-radius: 8px; border: 2px solid var(--border);
+      background: #fff; cursor: pointer; font-size: .8rem; font-weight: 600;
+      color: var(--muted); transition: all .2s; position: relative;
+    }
+    .sec-tab:hover   { border-color: var(--primary); color: var(--primary); }
+    .sec-tab.active  { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .sec-tab .dot {
+      position: absolute; top: -4px; right: -4px;
+      width: 10px; height: 10px; border-radius: 50%; border: 2px solid #fff;
+    }
+    .dot-empty   { background: #E5E7EB; }
+    .dot-partial { background: var(--gold); }
+    .dot-full    { background: var(--green); }
+    .dot-weak    { background: var(--accent); }
+
+    /* ── Section panel ── */
+    .section-panel { display: none; }
+    .section-panel.active { display: block; }
+    .section-panel h4 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+    .section-panel .hint { font-size: .8rem; color: var(--muted); margin-bottom: 12px; }
+    .section-panel textarea {
+      width: 100%; min-height: 130px; border: 1.5px solid var(--border); border-radius: 10px;
+      padding: 12px; font-size: .9rem; resize: vertical; outline: none;
+      font-family: inherit; transition: border-color .2s;
+    }
+    .section-panel textarea:focus { border-color: var(--primary); }
+    .char-count { font-size: .75rem; color: var(--muted); text-align: right; margin-top: 4px; }
+
+    /* ── Checklist ── */
+    .checklist { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+    .check-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: 9px;
+      border: 1.5px solid var(--border); background: #F9FAFB;
+      font-size: .83rem; cursor: pointer; transition: all .2s;
+    }
+    .check-item:hover { border-color: var(--primary); }
+    .check-item.checked { background: #EEF7EE; border-color: var(--green); }
+    .check-item.checked .cb { background: var(--green); border-color: var(--green); }
+    .check-item.checked .cb::after { display: block; }
+    .cb {
+      width: 18px; height: 18px; border-radius: 4px; border: 2px solid var(--border);
+      flex-shrink: 0; position: relative; background: #fff;
+    }
+    .cb::after {
+      content:''; display: none; position: absolute;
+      left: 4px; top: 1px; width: 6px; height: 10px;
+      border: 2px solid #fff; border-top: none; border-left: none;
+      transform: rotate(45deg);
+    }
+    .check-label { flex: 1; }
+    .check-label strong { display: block; margin-bottom: 1px; }
+    .check-label span  { color: var(--muted); font-size: .77rem; }
+
+    /* ── Analyse button ── */
+    .btn-analyse {
+      width: 100%; margin-top: 22px; padding: 14px;
+      background: linear-gradient(135deg, var(--primary), #001a5c);
+      color: #fff; font-size: 1rem; font-weight: 700; border: none;
+      border-radius: 10px; cursor: pointer; transition: opacity .2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-analyse:hover { opacity: .9; }
+
+    /* ── Score card (sidebar) ── */
+    .score-overview { text-align: center; padding: 20px 16px; }
+    .score-ring {
+      width: 130px; height: 130px; margin: 0 auto 12px;
+      position: relative; display: flex; align-items: center; justify-content: center;
+    }
+    .score-ring svg { position: absolute; top:0; left:0; transform: rotate(-90deg); }
+    .score-ring .score-num { font-size: 2.2rem; font-weight: 800; color: var(--primary); }
+    .score-ring .score-lbl { font-size: .7rem; color: var(--muted); }
+    .score-grade {
+      display: inline-block; padding: 4px 16px; border-radius: 20px;
+      font-weight: 700; font-size: .9rem; margin-bottom: 10px;
+    }
+    .grade-A { background: #D1FAE5; color: #065F46; }
+    .grade-B { background: #DBEAFE; color: #1E40AF; }
+    .grade-C { background: #FEF3C7; color: #92400E; }
+    .grade-D { background: #FEE2E2; color: #991B1B; }
+
+    /* ── Section breakdown ── */
+    .breakdown { display: flex; flex-direction: column; gap: 8px; padding: 16px; }
+    .bk-row { display: flex; align-items: center; gap: 10px; }
+    .bk-label { font-size: .78rem; font-weight: 600; width: 120px; flex-shrink: 0; }
+    .bk-bar-wrap { flex: 1; height: 8px; background: #E5E7EB; border-radius: 4px; overflow: hidden; }
+    .bk-bar { height: 100%; border-radius: 4px; transition: width .5s; }
+    .bk-pct { font-size: .75rem; font-weight: 700; width: 32px; text-align: right; }
+    .bar-green  { background: var(--green); }
+    .bar-yellow { background: var(--gold); }
+    .bar-red    { background: var(--accent); }
+    .bar-grey   { background: #D1D5DB; }
+
+    /* ── Recommendations ── */
+    .recs { display: flex; flex-direction: column; gap: 10px; padding: 16px; }
+    .rec-item {
+      padding: 12px 14px; border-radius: 10px; font-size: .82rem;
+      border-left: 4px solid transparent;
+    }
+    .rec-critical { background: #FEF2F2; border-color: var(--accent); }
+    .rec-improve  { background: #FFFBEB; border-color: var(--gold); }
+    .rec-good     { background: #ECFDF5; border-color: var(--green); }
+    .rec-item strong { display: block; margin-bottom: 4px; }
+    .rec-tag {
+      display: inline-block; font-size: .7rem; font-weight: 700;
+      padding: 2px 8px; border-radius: 12px; margin-bottom: 6px;
+    }
+    .tag-critical { background: #FEE2E2; color: #991B1B; }
+    .tag-improve  { background: #FEF3C7; color: #92400E; }
+    .tag-good     { background: #D1FAE5; color: #065F46; }
+
+    /* ── Malaysia-specific tips ── */
+    .tips-list { display: flex; flex-direction: column; gap: 10px; padding: 16px; }
+    .tip { display: flex; gap: 10px; align-items: flex-start; font-size: .82rem; }
+    .tip-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: -1px; }
+
+    /* ── Grant programs table ── */
+    .program-grid { display: flex; flex-direction: column; gap: 8px; padding: 16px; }
+    .prog-item {
+      padding: 10px 14px; border-radius: 9px; border: 1.5px solid var(--border);
+      cursor: pointer; transition: all .2s;
+    }
+    .prog-item:hover { border-color: var(--primary); background: #EEF2FF; }
+    .prog-item.selected { border-color: var(--primary); background: #EEF2FF; }
+    .prog-name { font-weight: 700; font-size: .85rem; }
+    .prog-agency { font-size: .75rem; color: var(--muted); margin-top: 2px; }
+    .prog-amount { font-size: .75rem; font-weight: 600; color: var(--green); margin-top: 4px; }
+    .prog-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+    .prog-tag {
+      font-size: .68rem; padding: 2px 7px; border-radius: 10px;
+      background: #EEF2FF; color: var(--primary); font-weight: 600;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center; padding: 40px 20px; color: var(--muted);
+    }
+    .empty-state .es-icon { font-size: 3rem; margin-bottom: 12px; }
+    .empty-state p { font-size: .9rem; }
+
+    /* ── Tabs (sidebar) ── */
+    .stabs { display: flex; border-bottom: 2px solid var(--border); padding: 0 16px; }
+    .stab {
+      padding: 12px 14px; font-size: .83rem; font-weight: 600;
+      color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent;
+      margin-bottom: -2px; transition: all .2s;
+    }
+    .stab.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .stab-panel { display: none; }
+    .stab-panel.active { display: block; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center; padding: 24px; color: var(--muted);
+      font-size: .8rem; border-top: 1px solid var(--border); margin-top: 20px;
+    }
+
+    /* ── Progress bar header ── */
+    .progress-header {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px 20px; margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+    .progress-header h3 { font-size: .9rem; font-weight: 600; margin-bottom: 10px; color: var(--muted); }
+    .progress-steps { display: flex; gap: 0; }
+    .ps {
+      flex: 1; text-align: center; position: relative;
+      font-size: .72rem; font-weight: 600; color: var(--muted);
+    }
+    .ps::before {
+      content: ''; display: block; width: 26px; height: 26px;
+      border-radius: 50%; background: #E5E7EB; margin: 0 auto 6px;
+      line-height: 26px; font-size: .75rem; font-weight: 700; color: var(--muted);
+      border: 2px solid #D1D5DB;
+    }
+    .ps.done::before    { background: var(--green); border-color: var(--green); color: #fff; content: '✓'; }
+    .ps.current::before { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .ps.empty::before   { content: attr(data-n); }
+    .ps:not(:last-child)::after {
+      content: ''; position: absolute; top: 13px; left: calc(50% + 13px);
+      right: calc(-50% + 13px); height: 2px; background: #E5E7EB;
+    }
+    .ps.done:not(:last-child)::after { background: var(--green); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">🇲🇾</div>
+      <div>
+        <h1>MyGrant Checker</h1>
+        <p>Malaysia Grant Proposal Analyser</p>
+      </div>
+    </div>
+    <span class="badge">Free Tool</span>
+  </div>
+</header>
+
+<div class="hero">
+  <h2>Strengthen Your Grant Proposal Before Submitting</h2>
+  <p>Identify weak sections, get actionable recommendations, and maximise your chances of approval for Malaysian government and agency grants.</p>
+  <div class="grant-tags">
+    <span class="grant-tag">MRANTI</span>
+    <span class="grant-tag">Cradle Fund</span>
+    <span class="grant-tag">MDEC</span>
+    <span class="grant-tag">MOSTI</span>
+    <span class="grant-tag">SME Corp</span>
+    <span class="grant-tag">MTDC</span>
+    <span class="grant-tag">MARA</span>
+    <span class="grant-tag">TERAJU</span>
+    <span class="grant-tag">MyIPO</span>
+    <span class="grant-tag">Khazanah</span>
+  </div>
+</div>
+
+<main>
+  <!-- Progress tracker -->
+  <div class="progress-header">
+    <h3>Completion Progress</h3>
+    <div class="progress-steps" id="progressSteps"></div>
+  </div>
+
+  <div class="grid">
+    <!-- LEFT: Input panel -->
+    <div>
+      <!-- Grant type -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header">
+          <span class="icon">🏛️</span>
+          <h3>Select Grant Programme</h3>
+        </div>
+        <div class="card-body">
+          <div class="grant-selector">
+            <label>Choose the grant you are applying for (affects evaluation criteria)</label>
+            <div class="grant-options" id="grantOptions"></div>
+          </div>
+          <div id="grantInfoBox" style="display:none; margin-top:12px; padding:12px 14px; background:#EEF2FF; border-radius:10px; font-size:.82rem;"></div>
+        </div>
+      </div>
+
+      <!-- Section input -->
+      <div class="card">
+        <div class="card-header">
+          <span class="icon">📝</span>
+          <h3>Proposal Sections</h3>
+        </div>
+        <div class="card-body">
+          <div class="section-tabs" id="sectionTabs"></div>
+          <div id="sectionPanels"></div>
+          <button class="btn-analyse" onclick="analyseProposal()">
+            <span>🔍</span> Analyse My Proposal
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Results panel -->
+    <div>
+      <!-- Score -->
+      <div class="card" style="margin-bottom:20px" id="scoreCard">
+        <div class="card-header">
+          <span class="icon">📊</span>
+          <h3>Overall Score</h3>
+        </div>
+        <div id="scoreContent">
+          <div class="empty-state">
+            <div class="es-icon">📋</div>
+            <p>Fill in your proposal sections and click <strong>Analyse</strong> to see your score.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar tabs: Recommendations / Tips / Programmes -->
+      <div class="card">
+        <div class="stabs">
+          <div class="stab active" onclick="switchStab(this,'recPanel')">💡 Recommendations</div>
+          <div class="stab" onclick="switchStab(this,'tipsPanel')">🇲🇾 MY Tips</div>
+          <div class="stab" onclick="switchStab(this,'progPanel')">🏦 Programmes</div>
+        </div>
+
+        <div class="stab-panel active" id="recPanel">
+          <div id="recContent">
+            <div class="empty-state">
+              <div class="es-icon">💡</div>
+              <p>Recommendations will appear after analysis.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="stab-panel" id="tipsPanel">
+          <div class="tips-list" id="tipsList"></div>
+        </div>
+
+        <div class="stab-panel" id="progPanel">
+          <div class="program-grid" id="progGrid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  MyGrant Checker &nbsp;|&nbsp; For Malaysian grant applicants &nbsp;|&nbsp; Not affiliated with any government agency<br>
+  <small>Always verify requirements directly with the grant agency before submitting.</small>
+</footer>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────────
+
+const GRANTS = [
+  { id:'mranti', label:'MRANTI', agency:'Malaysia Research Accelerator for Technology & Innovation', amount:'Up to RM 10 million', focus:'R&D, Deep Tech, Innovation', sectors:['Technology','Biotech','AgriTech'], criteria:['Technical merit','Market potential','Team expertise','IP strategy','National impact'] },
+  { id:'cradle', label:'Cradle CIP', agency:'Cradle Fund Sdn Bhd', amount:'Up to RM 500,000', focus:'Early-stage tech startups', sectors:['Startup','Tech','Digital'], criteria:['Innovation','Scalability','Team','Revenue model','Market size'] },
+  { id:'mdec',   label:'MDEC', agency:'Malaysia Digital Economy Corporation', amount:'Varies', focus:'Digital economy, Industry 4.0', sectors:['Digital','AI','Cloud','IoT'], criteria:['Digital transformation','Market readiness','Economic impact','Technical feasibility'] },
+  { id:'mosti',  label:'MOSTI', agency:'Ministry of Science, Technology & Innovation', amount:'Up to RM 3 million', focus:'S&T research & development', sectors:['Science','Engineering','Healthcare'], criteria:['Scientific merit','Methodology','Publications','National relevance','Sustainability'] },
+  { id:'smecorp',label:'SME Corp', agency:'SME Corporation Malaysia', amount:'Up to RM 200,000', focus:'SME capacity building', sectors:['Manufacturing','Services','Agriculture'], criteria:['Business viability','Employment creation','Revenue growth','Market expansion'] },
+  { id:'mtdc',   label:'MTDC', agency:'Malaysian Technology Development Corporation', amount:'Up to RM 5 million', focus:'Commercialisation of R&D', sectors:['Technology','Biotech','Engineering'], criteria:['Commercialisation plan','IP ownership','Market demand','Financial projections','Team'] },
+  { id:'mara',   label:'MARA', agency:'Majlis Amanah Rakyat', amount:'Varies', focus:'Bumiputera entrepreneurs', sectors:['Business','Trade','Industry'], criteria:['Bumiputera ownership','Business plan','Financial viability','Social impact'] },
+  { id:'teraju', label:'TERAJU', agency:'Unit Peneraju Agenda Bumiputera', amount:'Up to RM 1 million', focus:'Bumiputera GLCs & corporates', sectors:['Corporate','Technology','Finance'], criteria:['Bumiputera equity','Corporate governance','Growth strategy','Jobs creation'] },
+];
+
+const SECTIONS = [
+  {
+    id: 'executive',
+    label: 'Executive Summary',
+    hint: 'A concise overview (max 500 words) covering the problem, solution, team, budget, and expected outcomes.',
+    minWords: 100,
+    weight: 10,
+    checks: [
+      { id:'ex1', text:'Problem statement clearly stated', detail:'State the specific problem in 1–2 sentences.' },
+      { id:'ex2', text:'Proposed solution summarised', detail:'Briefly describe your technology or approach.' },
+      { id:'ex3', text:'Target beneficiaries mentioned', detail:'Who directly benefits from this project?' },
+      { id:'ex4', text:'Budget figure included', detail:'Provide the total funding requested.' },
+      { id:'ex5', text:'Expected outcomes listed', detail:'At least 2 measurable outcomes stated.' },
+    ]
+  },
+  {
+    id: 'problem',
+    label: 'Problem Statement',
+    hint: 'Describe the specific problem your project addresses. Use Malaysian statistics where possible.',
+    minWords: 150,
+    weight: 15,
+    checks: [
+      { id:'pr1', text:'Problem clearly articulated', detail:'One clear problem, not multiple vague issues.' },
+      { id:'pr2', text:'Supporting data or statistics cited', detail:'Use Malaysian data (DOSM, MOH, MITI, etc.).' },
+      { id:'pr3', text:'Affected population quantified', detail:'How many Malaysians / organisations are affected?' },
+      { id:'pr4', text:'Existing solutions and their gaps identified', detail:'Show why current solutions are inadequate.' },
+      { id:'pr5', text:'Economic or social cost described', detail:'Quantify the cost of the problem if possible.' },
+    ]
+  },
+  {
+    id: 'objectives',
+    label: 'Objectives',
+    hint: 'List SMART objectives (Specific, Measurable, Achievable, Relevant, Time-bound) aligned with the grant scope.',
+    minWords: 80,
+    weight: 10,
+    checks: [
+      { id:'ob1', text:'Objectives are SMART', detail:'Each objective has a metric and deadline.' },
+      { id:'ob2', text:'Aligned with grant programme goals', detail:'Reference the agency\'s strategic goals.' },
+      { id:'ob3', text:'At least 3 objectives listed', detail:'Primary and secondary objectives included.' },
+      { id:'ob4', text:'Linked to national policies', detail:'Cite MyDIGITAL, NIMP 2030, 12MP, etc.' },
+    ]
+  },
+  {
+    id: 'methodology',
+    label: 'Methodology',
+    hint: 'Explain your technical approach, work plan, and how you will execute the project.',
+    minWords: 200,
+    weight: 20,
+    checks: [
+      { id:'me1', text:'Technical approach detailed', detail:'Step-by-step explanation of your solution.' },
+      { id:'me2', text:'Work breakdown structure provided', detail:'Tasks, subtasks, and responsible parties.' },
+      { id:'me3', text:'Technology / tools specified', detail:'List specific technologies, platforms, or methods.' },
+      { id:'me4', text:'Risk mitigation strategy included', detail:'Identify 2–3 risks and how you\'ll address them.' },
+      { id:'me5', text:'Quality assurance plan mentioned', detail:'How will you validate and test outputs?' },
+      { id:'me6', text:'Proof of concept or pilot described', detail:'Prior work, prototype, or feasibility study.' },
+    ]
+  },
+  {
+    id: 'innovation',
+    label: 'Innovation & IP',
+    hint: 'Describe what makes your solution novel and your intellectual property strategy.',
+    minWords: 100,
+    weight: 15,
+    checks: [
+      { id:'in1', text:'Novelty clearly stated', detail:'What is new vs. existing solutions?' },
+      { id:'in2', text:'IP ownership / patent status mentioned', detail:'State patents filed, pending, or planned via MyIPO.' },
+      { id:'in3', text:'Competitive advantage articulated', detail:'Why can\'t competitors replicate this easily?' },
+      { id:'in4', text:'Technology Readiness Level (TRL) stated', detail:'Use standard TRL 1–9 scale.' },
+      { id:'in5', text:'Collaboration / licensing plans', detail:'Any university spin-off, JICA, or industry partner?' },
+    ]
+  },
+  {
+    id: 'market',
+    label: 'Market Analysis',
+    hint: 'Demonstrate market demand, target customers, and commercialisation potential.',
+    minWords: 150,
+    weight: 15,
+    checks: [
+      { id:'ma1', text:'Total Addressable Market (TAM) quantified', detail:'Malaysian and ASEAN market size in RM.' },
+      { id:'ma2', text:'Target customer segment defined', detail:'B2B, B2G, B2C — who specifically?' },
+      { id:'ma3', text:'Go-to-market strategy outlined', detail:'How will you reach customers?' },
+      { id:'ma4', text:'Revenue model described', detail:'Subscription, licensing, product sale, etc.' },
+      { id:'ma5', text:'Competitors identified', detail:'At least 3 local and international competitors.' },
+    ]
+  },
+  {
+    id: 'budget',
+    label: 'Budget & Financials',
+    hint: 'Provide a detailed budget breakdown and financial projections.',
+    minWords: 100,
+    weight: 10,
+    checks: [
+      { id:'bu1', text:'Detailed budget breakdown provided', detail:'Personnel, equipment, materials, overhead, travel.' },
+      { id:'bu2', text:'Budget justification included', detail:'Explain why each item is needed.' },
+      { id:'bu3', text:'Co-funding or matching funds mentioned', detail:'Industry partner contribution, own funds, etc.' },
+      { id:'bu4', text:'Financial projections (3–5 years)', detail:'Revenue, break-even, ROI projections.' },
+      { id:'bu5', text:'Complies with eligible expenditure guidelines', detail:'Check agency\'s allowable cost list.' },
+    ]
+  },
+  {
+    id: 'team',
+    label: 'Team & Organisation',
+    hint: 'Highlight team qualifications, experience, and organisational capacity.',
+    minWords: 100,
+    weight: 10,
+    checks: [
+      { id:'te1', text:'Principal Investigator / Project Lead CV included', detail:'Relevant qualifications and track record.' },
+      { id:'te2', text:'Key team members listed with roles', detail:'At least 3 members with clear responsibilities.' },
+      { id:'te3', text:'Relevant prior experience highlighted', detail:'Past grants, publications, or projects.' },
+      { id:'te4', text:'Organisation profile provided', detail:'SSM registration, company age, financial health.' },
+      { id:'te5', text:'Advisory board or industry mentor mentioned', detail:'Strengthens credibility significantly.' },
+    ]
+  },
+  {
+    id: 'impact',
+    label: 'Expected Impact',
+    hint: 'Quantify the economic, social, and national impact of your project.',
+    minWords: 100,
+    weight: 10,
+    checks: [
+      { id:'im1', text:'Measurable KPIs defined', detail:'Jobs created, revenue generated, users reached.' },
+      { id:'im2', text:'Economic impact quantified', detail:'GDP contribution, cost savings, export value.' },
+      { id:'im3', text:'Social / environmental impact described', detail:'SDG alignment, ESG considerations.' },
+      { id:'im4', text:'Alignment with national agenda', detail:'12MP, National Tech & Innovation Sandbox, etc.' },
+      { id:'im5', text:'Sustainability plan post-grant', detail:'How will the project continue after funding ends?' },
+    ]
+  },
+];
+
+const MY_TIPS = [
+  { icon:'🏢', text:'Register with <strong>SSM</strong> (Suruhanjaya Syarikat Malaysia) — most grants require a valid company registration number.' },
+  { icon:'💰', text:'Keep your <strong>audited financial statements</strong> up to date (last 2–3 years). Agencies like MTDC and SME Corp check financial health.' },
+  { icon:'🔬', text:'Reference <strong>Technology Readiness Level (TRL)</strong> explicitly. MRANTI and MOSTI use TRL as a key evaluation metric.' },
+  { icon:'📊', text:'Cite <strong>DOSM, BNM, or MITI statistics</strong> to support your problem statement. Malaysian data is more persuasive than global figures.' },
+  { icon:'🤝', text:'Include a <strong>university or GLC partner</strong> (UTM, UPM, UiTM, etc.) to strengthen credibility, especially for MOSTI grants.' },
+  { icon:'🌴', text:'Align with <strong>12th Malaysia Plan (12MP)</strong> pillars: sustainability, digitalisation, and high-income economy.' },
+  { icon:'📋', text:'Apply for <strong>MyIPO patent protection</strong> before or during application — it significantly boosts innovation scores.' },
+  { icon:'🇲🇾', text:'For <strong>Bumiputera grants</strong> (MARA, TERAJU), ensure Bumiputera equity ≥ 51% is clearly documented with share certificates.' },
+  { icon:'📱', text:'Submit via the agency\'s official portal: <strong>MyMeGeM</strong> (MOSTI), <strong>iSMEGrants</strong> (SME Corp), or MRANTI\'s Applicant Portal.' },
+  { icon:'⏰', text:'Apply <strong>3–6 months early</strong> — evaluation cycles are quarterly and late applications roll to next cycle.' },
+];
+
+// ── State ─────────────────────────────────────────────────────────────────────
+const state = {
+  selectedGrant: 'mranti',
+  texts: {},
+  checks: {},
+  analysed: false,
+};
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+function init() {
+  renderGrantOptions();
+  renderSectionTabs();
+  renderSectionPanels();
+  renderMyTips();
+  renderProgGrid();
+  renderProgressSteps();
+}
+
+function renderGrantOptions() {
+  const el = document.getElementById('grantOptions');
+  el.innerHTML = GRANTS.map(g =>
+    `<button class="grant-btn ${g.id===state.selectedGrant?'active':''}" onclick="selectGrant('${g.id}')">${g.label}</button>`
+  ).join('');
+  showGrantInfo(state.selectedGrant);
+}
+
+function selectGrant(id) {
+  state.selectedGrant = id;
+  renderGrantOptions();
+}
+
+function showGrantInfo(id) {
+  const g = GRANTS.find(x=>x.id===id);
+  const box = document.getElementById('grantInfoBox');
+  if (!g) { box.style.display='none'; return; }
+  box.style.display = 'block';
+  box.innerHTML = `
+    <strong>${g.label} — ${g.agency}</strong><br>
+    <span style="color:var(--green);font-weight:600;">${g.amount}</span> &nbsp;·&nbsp; ${g.focus}<br>
+    <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
+      ${g.sectors.map(s=>`<span style="background:#fff;border:1px solid var(--border);padding:2px 8px;border-radius:10px;font-size:.72rem;">${s}</span>`).join('')}
+    </div>
+    <div style="margin-top:8px;font-size:.77rem;color:var(--muted);">Key criteria: ${g.criteria.join(' · ')}</div>`;
+}
+
+function renderSectionTabs() {
+  const el = document.getElementById('sectionTabs');
+  el.innerHTML = SECTIONS.map((s,i) => {
+    const dotClass = getDotClass(s.id);
+    return `<div class="sec-tab ${i===0?'active':''}" id="tab-${s.id}" onclick="switchSection('${s.id}')">
+      ${s.label}<span class="dot ${dotClass}"></span>
+    </div>`;
+  }).join('');
+}
+
+function getDotClass(sectionId) {
+  const text = state.texts[sectionId] || '';
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  const sec = SECTIONS.find(s=>s.id===sectionId);
+  if (!sec) return 'dot-empty';
+  if (words === 0) return 'dot-empty';
+  if (words < sec.minWords) return 'dot-weak';
+  const checks = state.checks[sectionId] || {};
+  const done = sec.checks.filter(c=>checks[c.id]).length;
+  if (done === sec.checks.length) return 'dot-full';
+  return 'dot-partial';
+}
+
+function renderSectionPanels() {
+  const el = document.getElementById('sectionPanels');
+  el.innerHTML = SECTIONS.map((s,i) => `
+    <div class="section-panel ${i===0?'active':''}" id="panel-${s.id}">
+      <h4>${s.label}</h4>
+      <p class="hint">💬 ${s.hint}</p>
+      <textarea id="text-${s.id}" placeholder="Paste or type your ${s.label} content here…"
+        oninput="onTextInput('${s.id}',this)">${state.texts[s.id]||''}</textarea>
+      <div class="char-count" id="cc-${s.id}">0 words · Minimum: ${s.minWords} words</div>
+      <div class="checklist">${renderChecklist(s)}</div>
+    </div>`).join('');
+}
+
+function renderChecklist(sec) {
+  const checks = state.checks[sec.id] || {};
+  return sec.checks.map(c => `
+    <div class="check-item ${checks[c.id]?'checked':''}" id="ci-${c.id}" onclick="toggleCheck('${sec.id}','${c.id}')">
+      <div class="cb"></div>
+      <div class="check-label">
+        <strong>${c.text}</strong>
+        <span>${c.detail}</span>
+      </div>
+    </div>`).join('');
+}
+
+function switchSection(id) {
+  document.querySelectorAll('.sec-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.section-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  document.getElementById('panel-'+id).classList.add('active');
+}
+
+function onTextInput(secId, textarea) {
+  state.texts[secId] = textarea.value;
+  const words = textarea.value.trim().split(/\s+/).filter(Boolean).length;
+  const sec = SECTIONS.find(s=>s.id===secId);
+  const cc = document.getElementById('cc-'+secId);
+  const ok = words >= sec.minWords;
+  cc.textContent = `${words} words · Minimum: ${sec.minWords} words`;
+  cc.style.color = ok ? 'var(--green)' : words > 0 ? 'var(--accent)' : 'var(--muted)';
+  updateTabDot(secId);
+  renderProgressSteps();
+}
+
+function toggleCheck(secId, checkId) {
+  if (!state.checks[secId]) state.checks[secId] = {};
+  state.checks[secId][checkId] = !state.checks[secId][checkId];
+  const ci = document.getElementById('ci-'+checkId);
+  ci.classList.toggle('checked', state.checks[secId][checkId]);
+  ci.querySelector('.cb').style.cssText = state.checks[secId][checkId]
+    ? 'background:var(--green);border-color:var(--green);' : '';
+  updateTabDot(secId);
+}
+
+function updateTabDot(secId) {
+  const tab = document.getElementById('tab-'+secId);
+  if (!tab) return;
+  const dot = tab.querySelector('.dot');
+  dot.className = 'dot ' + getDotClass(secId);
+}
+
+function renderProgressSteps() {
+  const el = document.getElementById('progressSteps');
+  const filled = SECTIONS.filter(s=>{
+    const t = state.texts[s.id]||'';
+    return t.trim().split(/\s+/).filter(Boolean).length >= s.minWords;
+  }).length;
+
+  el.innerHTML = SECTIONS.map((s,i) => {
+    const t = state.texts[s.id]||'';
+    const words = t.trim().split(/\s+/).filter(Boolean).length;
+    const done = words >= s.minWords;
+    const cls = done ? 'done' : i===0 ? 'current' : 'empty';
+    return `<div class="ps ${cls}" data-n="${i+1}">${s.label.split(' ')[0]}</div>`;
+  }).join('');
+}
+
+function renderMyTips() {
+  document.getElementById('tipsList').innerHTML = MY_TIPS.map(t=>
+    `<div class="tip"><span class="tip-icon">${t.icon}</span><span>${t.text}</span></div>`
+  ).join('');
+}
+
+function renderProgGrid() {
+  document.getElementById('progGrid').innerHTML = GRANTS.map(g=>
+    `<div class="prog-item ${g.id===state.selectedGrant?'selected':''}" onclick="selectGrant('${g.id}');renderGrantOptions();">
+      <div class="prog-name">${g.label}</div>
+      <div class="prog-agency">${g.agency}</div>
+      <div class="prog-amount">${g.amount}</div>
+      <div class="prog-tags">${g.sectors.map(s=>`<span class="prog-tag">${s}</span>`).join('')}</div>
+    </div>`
+  ).join('');
+}
+
+function switchStab(el, panelId) {
+  document.querySelectorAll('.stab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.stab-panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(panelId).classList.add('active');
+}
+
+// ── Analysis Engine ───────────────────────────────────────────────────────────
+function analyseProposal() {
+  const results = SECTIONS.map(sec => {
+    const text = state.texts[sec.id] || '';
+    const words = text.trim().split(/\s+/).filter(Boolean).length;
+    const wordScore = Math.min(words / sec.minWords, 1);
+    const checks = state.checks[sec.id] || {};
+    const checksDone = sec.checks.filter(c => checks[c.id]).length;
+    const checkScore = checksDone / sec.checks.length;
+    const score = Math.round((wordScore * 0.4 + checkScore * 0.6) * 100);
+    return { ...sec, words, wordScore, checksDone, totalChecks: sec.checks.length, score };
+  });
+
+  const weightedTotal = results.reduce((acc, r) => acc + r.score * r.weight, 0);
+  const totalWeight = results.reduce((acc, r) => acc + r.weight, 0);
+  const overall = Math.round(weightedTotal / totalWeight);
+
+  state.analysed = true;
+  renderScoreCard(overall, results);
+  renderRecommendations(results);
+
+  // scroll to results
+  document.getElementById('scoreCard').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function renderScoreCard(overall, results) {
+  const grade = overall >= 80 ? 'A' : overall >= 65 ? 'B' : overall >= 50 ? 'C' : 'D';
+  const gradeLabel = { A:'Excellent – Ready to Submit', B:'Good – Minor Improvements Needed', C:'Fair – Significant Work Required', D:'Weak – Major Revision Needed' }[grade];
+  const circumference = 2 * Math.PI * 54;
+  const offset = circumference - (overall / 100) * circumference;
+  const trackColor = grade==='A' ? '#00843D' : grade==='B' ? '#003087' : grade==='C' ? '#F6C000' : '#CC0001';
+
+  document.getElementById('scoreContent').innerHTML = `
+    <div class="score-overview">
+      <div class="score-ring">
+        <svg viewBox="0 0 120 120" width="130" height="130">
+          <circle cx="60" cy="60" r="54" fill="none" stroke="#E5E7EB" stroke-width="10"/>
+          <circle cx="60" cy="60" r="54" fill="none" stroke="${trackColor}" stroke-width="10"
+            stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"
+            stroke-linecap="round" style="transition:stroke-dashoffset .8s"/>
+        </svg>
+        <div><div class="score-num">${overall}</div><div class="score-lbl">/ 100</div></div>
+      </div>
+      <div class="score-grade grade-${grade}">${grade} – ${gradeLabel}</div>
+    </div>
+    <div class="breakdown">
+      ${results.map(r => {
+        const barClass = r.score>=75?'bar-green':r.score>=50?'bar-yellow':'bar-red';
+        return `<div class="bk-row">
+          <div class="bk-label">${r.label}</div>
+          <div class="bk-bar-wrap"><div class="bk-bar ${barClass}" style="width:${r.score}%"></div></div>
+          <div class="bk-pct" style="color:${r.score>=75?'var(--green)':r.score>=50?'#92400E':'var(--accent)'}">${r.score}%</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function renderRecommendations(results) {
+  const critical = results.filter(r => r.score < 50);
+  const improve  = results.filter(r => r.score >= 50 && r.score < 75);
+  const good     = results.filter(r => r.score >= 75);
+
+  const grant = GRANTS.find(g => g.id === state.selectedGrant);
+
+  let html = '<div class="recs">';
+
+  if (critical.length) {
+    html += `<div class="rec-item rec-critical">
+      <span class="rec-tag tag-critical">🚨 Critical</span>
+      <strong>These sections need major work:</strong>
+      <ul style="margin-top:6px;margin-left:16px;">
+        ${critical.map(r=>`<li style="margin-bottom:4px;"><strong>${r.label}</strong> (${r.score}%) — ${r.words < r.minWords ? `only ${r.words}/${r.minWords} words required` : `only ${r.checksDone}/${r.totalChecks} checklist items completed`}</li>`).join('')}
+      </ul>
+    </div>`;
+  }
+
+  if (improve.length) {
+    html += `<div class="rec-item rec-improve">
+      <span class="rec-tag tag-improve">⚠️ Needs Improvement</span>
+      <strong>These sections can be strengthened:</strong>
+      <ul style="margin-top:6px;margin-left:16px;">
+        ${improve.map(r=>`<li style="margin-bottom:4px;"><strong>${r.label}</strong> (${r.score}%) — complete remaining ${r.totalChecks - r.checksDone} checklist items</li>`).join('')}
+      </ul>
+    </div>`;
+  }
+
+  if (good.length) {
+    html += `<div class="rec-item rec-good">
+      <span class="rec-tag tag-good">✅ Strong Sections</span>
+      <strong>Well done on:</strong> ${good.map(r=>r.label).join(', ')}
+    </div>`;
+  }
+
+  // Grant-specific tip
+  if (grant) {
+    html += `<div class="rec-item" style="background:#EEF2FF;border-left:4px solid var(--primary);">
+      <span class="rec-tag" style="background:#DBEAFE;color:#1E40AF;">ℹ️ ${grant.label} Specific</span>
+      <strong>Key criteria for ${grant.label}:</strong>
+      <ul style="margin-top:6px;margin-left:16px;">
+        ${grant.criteria.map(c=>`<li>${c}</li>`).join('')}
+      </ul>
+    </div>`;
+  }
+
+  html += '</div>';
+  document.getElementById('recContent').innerHTML = html;
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
